@@ -1,7 +1,7 @@
 # MyTorch
 An autograd engine inspired by Andrej Karpathy's [micrograd](https://github.com/karpathy/micrograd).
 
-The goal of this project is to understand the ML framework [PyTorch](https://github.com/pytorch/pytorch), by rebuilding it from scratch.
+The goal of this project is to learn & re-implement (from scratch) the core ideas of the ML framework [PyTorch](https://github.com/pytorch/pytorch).
 
 Eventually, this project will utilize CUDA for accelerated deep learning.
 
@@ -18,3 +18,4 @@ Eventually, this project will utilize CUDA for accelerated deep learning.
 
 ## Example usage
 run _python -m test.test_
+
