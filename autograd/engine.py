@@ -1,4 +1,4 @@
-from math import exp, log2
+from math import e, log
 
 class Value:
     def __init__(self, value, prev= (), op= '', requires_grad= False):
@@ -6,12 +6,12 @@ class Value:
         self.val= value
         self._prev= set(prev)
         self._op= op
-        self._grad= 0
+        self.grad= 0
         self._backward= lambda: None
         self.requires_grad= requires_grad
         
     def __repr__(self):
-        return f'Value: {self.val}, Grad: {self._grad}'
+        return f'Value: {self.val}, Grad: {self.grad}'
     
     def __add__(self, other):
         other = other if isinstance(other, Value) else Value(other)
@@ -34,9 +34,9 @@ class Value:
                      = dLoss/dA * 1
             """
             if self.requires_grad:
-                self._grad += out._grad
+                self.grad += out.grad
             if other.requires_grad:
-                other._grad+= out._grad
+                other.grad+= out.grad
         
         #This function-pointer is a 'closure', consequently the variables 'self' & 'other' are stored with it
         out._backward= _back_propagate
@@ -50,9 +50,9 @@ class Value:
         out = Value(self.val * other.val, (self, other,), '*', self.requires_grad or other.requires_grad)
         def _back_propagate():
             if self.requires_grad:
-                self._grad += out._grad * other.val
+                self.grad += out.grad * other.val
             if other.requires_grad:
-                other._grad+= out._grad * self.val
+                other.grad+= out.grad * self.val
         out._backward= _back_propagate
         return out
     
@@ -73,7 +73,7 @@ class Value:
         out= Value(self.val**other, (self,), f'^{other}', self.requires_grad)
         def _back_propagate():
             if self.requires_grad:
-                self._grad+= out._grad * other * self.val**(other-1)
+                self.grad+= out.grad * other * self.val**(other-1)
         out._backward= _back_propagate
         return out
     
@@ -83,18 +83,25 @@ class Value:
     def __rtruediv__(self, other): # other / self -> other * self**-1
         return other * self**-1
     
-    
     def _exp(self, multiplier= 1):
         x= self.val*multiplier
-        return exp(x) if x < 4.6 else 100
+        return e**x if x <= 3 else 20
 
-    def log_2(self):
-        val= log2(self.val) if self.val > 1e-10 else -33.2
-        out= Value(val, (self,), 'log2', self.requires_grad)
+    def exp(self, multiplier= 1):
+        out= Value(self._exp(multiplier), (self,), f'exp**({multiplier}*x)', self.requires_grad)
         def _back_propagate():
             if self.requires_grad:
-                val = 1/self.val if self.val > 1e-10 else 1e10
-                self._grad += out._grad*val
+                self.grad += out.grad * out.val * multiplier
+        out._backward= _back_propagate
+        return out
+    
+    def ln(self):
+        val= log(self.val) if self.val > 0.1 else -2.3
+        out= Value(val, (self,), 'log', self.requires_grad)
+        def _back_propagate():
+            if self.requires_grad:
+                val = 1/self.val if self.val > 0.1 else 10
+                self.grad += out.grad*val
         out._backward= _back_propagate
         return out
 
@@ -102,7 +109,7 @@ class Value:
         out = Value(1 / (1 + self._exp(-1)), (self,), 'sigmoid', self.requires_grad)
         def _back_propagate():
             if self.requires_grad:
-                self._grad += out._grad * out.val * (1-out.val)
+                self.grad += out.grad * out.val * (1-out.val)
         out._backward= _back_propagate
         return out
     
@@ -112,7 +119,7 @@ class Value:
         out = Value(val, (self,), 'tanh', self.requires_grad)
         def _back_propagate():
             if self.requires_grad:
-                self._grad += out._grad * (1- out.val**2)
+                self.grad += out.grad * (1- out.val**2)
         out._backward= _back_propagate
         return out
     
@@ -120,7 +127,7 @@ class Value:
         out= Value(self.val if self.val > 0 else 0, (self,), 'relu', self.requires_grad)
         def _back_propagate():
             if self.requires_grad:
-                self._grad += out._grad if out.val > 0 else 0
+                self.grad += out.grad if out.val > 0 else 0
         out._backward= _back_propagate
         return out
     
@@ -138,7 +145,7 @@ class Value:
         _sorted.reverse()
         
         # the derivative of the root w..r.t the root is 1
-        self._grad= 1
+        self.grad= 1
         for v in _sorted:
             if v.requires_grad:
                 v._backward()
