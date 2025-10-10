@@ -17,4 +17,5 @@ Eventually, this project will utilize CUDA for accelerated deep learning.
 - GPU support with CUDA
 
 ## Example usage
-run _python -m test.cnn
+run _python -m test.cnn_
+
